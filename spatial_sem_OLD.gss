@@ -1,0 +1,180 @@
+library maxlik;
+maxset;
+
+/* to clear all globals once code is completed */
+
+//clearg nobs
+
+/******************************************************************************
+                 Data and Model Specification
+******************************************************************************/
+row_range = {2,29101};
+//input = csvReadM("C:\\Users\\Jason\\Documents\\PhD\\Thesis\\estimation\\Spatial_SEM_Model\\sql_output.csv", 2);
+//string var_names = {"uno", "sero", "householdid", "daycardist", "facdist", "homedist", "shopdist", "othdist", "schooldist", "workdist", "transtrip", "activetrip",
+// "autotrip", "gotrip", "taxitrip", "ubertrip", "dwelltype", "veh", "inc", "hhsize", "hhworkers", "hhstudents", "hhadults", "hhchildren", "hhtrips", 
+// "age", "sex", "empstat", "occ", "studstat", "lic", "transpass", "unusualworkhome", "worktrips", "schooltrips"};
+//dataset = saved(input, "C:\\Users\\Jason\\Documents\\PhD\\Thesis\\estimation\\Spatial_SEM_Model\\data.dat", var_names);
+
+dataset = "C:\\Users\\Jason\\Documents\\PhD\\Thesis\\estimation\\Spatial_SEM_Model\\data.dat";
+
+///* number of observations */
+//nobs = 116279;
+nobs = 116279;
+ntaz = 3765;
+__row = 1000;
+
+///******************************************************************************
+//                 Spatial Weight Matrix
+//******************************************************************************/
+input = csvReadM("C:\\Users\\Jason\\Documents\\PhD\\Thesis\\estimation\\Spatial_SEM_Model\\ijv_dist.csv", 2);
+// Convert input into a sparse matrix format
+sparse matrix weights;
+weights = packedToSp(nobs,nobs,input);
+//weights1 = spToDense(weights);
+save weights1;
+
+//load weights;
+
+/* *******************************************************************************************
+                                       MAIN PROGRAM AREA
+********************************************************************************************/
+
+_max_Maxiters = 100;
+_max_Options = { bfgs stepbt };
+_max_CovPar=1;  /* 0=none, 1=H^-1, 2=(gg')^-1, 3=2*1*2 */
+
+func = 10;
+nvar = 1;
+
+/* Provide the indices for the endogenous and exogenous variables */
+let exogvar = { uno };
+{exog, iexog} = indices(dataset, exogvar);
+{endog,iendog} = indices(dataset,"workdist");
+{endog,iwstat} = indices(dataset,"empstat");
+
+/****************************Provide the starting values here*********************************/
+if func == 1;
+    b = ones(nvar,1);
+    _max_active = ones(nvar,1);
+    _max_ParNames = exogvar;
+elseif func == 2 or func == 3 or func == 4 or func == 6 or func == 7 or func == 8;
+    nparam = 1;
+    b = ones(nvar+nparam,1);
+    _max_active = ones(nvar,1)|zeros(nparam,1);
+    _max_ParNames = exogvar|"Gamma";
+elseif func == 9;
+    nparam = 2;
+    b = ones(nvar,1)|ones(nparam,1);
+    _max_active = ones(nvar,1)|zeros(nparam,1);
+    _max_ParNames = exogvar|"Kappa"|"Sigma";
+else;
+    nparam = 3;
+    b = ones(nvar,1)|ones(nparam-1,1)|0;
+    _max_active = ones(nvar+nparam,1);
+    _max_ParNames = exogvar|"Lambda"|"Sigma"|"Rho";
+endif;
+
+_title = "Hazard Model with Spatial Lags using MLE ";
+
+{x,f,g,cov,retcode} = maxprt(maxlik(dataset,0,&lpr,b));
+
+
+bhess = _max_finalhess * nobs;
+
+OUTPUT FILE="C:\\Users\\Jason\\Documents\\PhD\\Thesis\\estimation\\Spatial_SEM_Model\\Hessian.txt" ON;
+bhess;
+
+/************************* Start of likelihood function for proportional hazard model *************/
+proc lpr(x,dta);
+    local y,xvar,eventvar,mu,gam,kap,zet,upsil,sig,density,survival,lam,rho,p1,p2,exp1,exp2,ll,ba,summa;
+//    sparse matrix a;
+//    sparse matrix summa;
+    
+    xvar = dta[., iexog];
+    // Convert distance in meters to distance in 10s of km
+    y = dta[., iendog]./10^4;
+    eventvar = (dta[., iwstat].==1) + (dta[., iwstat].==5);
+    
+    // Proportional hazard with exponential distribution
+    if func == 1;
+        mu = exp(xvar*x[1:nvar]);
+        ll = (ln(mu)-(mu.*y)).*eventvar;
+    // Proportional hazard with Weibull distribution
+    elseif func == 2;
+        gam = x[nvar+1];
+        mu = exp(xvar*x[1:nvar]);
+        ll = (ln(gam*mu.*y.^(gam - 1))-(mu.*y.^gam)).*eventvar;
+    // Proportional hazard with Gompertz distribution
+    elseif func == 3;
+        gam = x[nvar+1];
+        mu = xvar*x[1:nvar];
+        ll = ((mu+gam.*y)-(exp(mu).*exp(gam.*y)-1)./gam).*eventvar;
+    // Proportional hazard with logistic distribution
+    elseif func == 4;
+        gam = x[nvar+1];
+        mu = exp(xvar*x[1:nvar]);
+        ll = (ln(mu.*gam.*y.^(gam-1))./(1+mu.*y.^gam)+ln(1./(1+mu.*y.^gam))).*eventvar;
+    // Accelerated failure time with exponential distribution
+    elseif func == 5;
+        mu = exp(-1*xvar*x[1:nvar]);
+        ll = (ln(mu)-(mu.*y)).*eventvar;
+    // Accelerated failure time with Weibull distribution
+    elseif func == 6;
+        gam = x[nvar+1];
+        mu = exp(-1*xvar*x[1:nvar]*gam);
+        ll = (ln(mu.*gam.*y.^(gam-1))-(mu.*y.^gam)).*eventvar;
+    // Accelerated failure time with logistic distribution
+    elseif func == 7;
+        gam = x[nvar+1];
+        mu = exp(-1*xvar*x[1:nvar].*gam);
+        ll = (ln(mu.*gam.*y.^(gam-1))/(1+mu.*y.^gam)+ln(1/(1+mu.*y.^gam))).*eventvar;
+    // Accelerated failure time with lognormal distribution
+    elseif func == 8;
+        gam = x[nvar+1];
+        mu = xvar*x[1:nvar];
+        ll = (ln(pdfn(((ln(y)-mu).*gam)/(y.*(1./gam).*(1-cdfn((ln(y)-mu).*gam)))))
+             + ln(1-cdfn((ln(y)-mu).*gam))).*eventvar;
+    // Accelerated failure time with generalized gamma distribution   
+    elseif func == 9;
+        kap = x[nvar+1];
+        sig = x[nvar+2];
+        mu = xvar*x[1:nvar];
+        gam = abs(kap).^(-2);
+        if kap < 0;
+            zet = -1*(ln(y)-mu)./sig;
+            upsil = gam*exp(abs(kap)*zet);
+            density = gam.^gam.*exp(zet.*gam.^0.5-upsil)/(sig*y*gam^0.5*gam^gam);
+            survival = 1 - cdfGam(gam,upsil);
+        elseif kap == 0;
+            zet = (ln(y)-mu)./sig;
+            upsil = gam*exp(abs(kap)*zet);
+            density = exp(-1*zet^2./2)/(sig*y*2*pi^0.5);
+            survival = 1 - cdfn(zet); 
+        else;
+            zet = (ln(y)-mu)./sig;
+            upsil = gam*exp(abs(kap)*zet);
+            density = gam.^gam.*exp(zet.*gam.^0.5-upsil)/(sig*y*gam^0.5*gam^gam);
+            survival = 1 - cdfGam(gam,upsil);
+        endif;
+        ll = (ln(density/survival) + ln(survival)).*eventvar;
+    else;
+        lam = x[nvar+1];
+        sig = x[nvar+2];
+        rho = x[nvar+3];
+        mu = xvar*x[1:nvar];
+        weights1 = spToDense(weights);
+        summa = sig^2*inv(eye(nobs)-rho*weights1);
+//        a = spEye(nobs)-spTScalar(weights,rho,0,0);
+//        a = (spEye(nobs)-spTScalar(weights,rho,0,0))^-1;
+//        b = sig^2;
+//        summa = spTScalar(a,b,0,0);
+        p1 = 1/((2*pi).^(nobs/2).*det(summa)^0.5);
+        exp1 = -((y^lam-1)/lam-mu)';
+        exp2 = ((y^lam-1)/lam-mu)./2;
+        p2 = exp(exp1.*inv(summa).*exp2);
+        ll = ln(p1.*p2.*eventvar);
+    endif;
+    
+    retp(sumc(ll));
+
+ endp;

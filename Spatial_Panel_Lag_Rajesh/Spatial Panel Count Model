@@ -1,0 +1,891 @@
+library maxlik;
+maxset;
+
+/* to clear all globals once code is completed */
+
+clearg nobs
+
+/******************************************************************************
+                 Data and Model Specification
+******************************************************************************/
+
+id = dbAddDatabase("PSQL");
+dbSetHostName(id, "localhost");
+dbSetPort(id, 5432);
+dbSetDatabaseName(id, "TTS_2016");
+dbSetUserName(id, "postgres");
+dbSetPassword(id, "postgres");
+ret = dbOpen(id);
+
+qid = dbExecQuery(id, "SELECT dwellingtype, vehicles, incomeclass, numberofpersons, numberofworkers, numberofstudents, numberofadults, numberofchildren, numberoftrips, age,
+                sex, employmentstatus, occupation, studentstatus, license, transitpass, manhattandistance FROM public.\"GTATripsBEAnalysis\" WHERE purposedestination = 'W' AND employmentstatus = 1 ORDER BY householdid");
+INPUT =  dbQueryFetchAllM(qid);
+string var_names = {"dwellingtype", "vehicles", "incomeclass", "numberofpersons", "numberofworkers", "numberofstudents", "numberofadults", "numberofchildren", "numberoftrips", "age",
+ "sex", "employmentstatus", "occupation", "studentstatus", "license", "transitpass", "manhattandistance"};
+dataset = saved(INPUT, "data.dat", var_names);
+dbClose(id);
+
+dataset = "C:\\Users\\Jason\\Documents\\PhD\\Thesis\\estimation\\Spatial_SEM_Model\\data.dat";
+
+/* number of individuals in panel */
+nind = 170;
+
+/*Number of choice occasions in the panel*/
+nocc = 7;
+
+/* number of observations in sample */
+nobser = nind*nocc;
+
+
+/******************************************************************************
+                 Spatial Weight Matrix
+******************************************************************************/
+load weights[170,170] = "C:/Rajesh/Study/Codes/Distance.txt";
+
+dband=(weights.<3);
+
+WTilda  = sumc(sumc(dband'));
+
+weights1 = 1000.*(weights.==0) + weights;
+mindis = minc(minc(weights1));
+weights = mindis.*(weights.==0) + weights;
+
+weights = 1./exp(weights);
+
+weights = diagrv(weights,zeros(nind,1));
+weights = weights./sumc(weights');
+
+dband = ones(nocc,nocc).*.dband;
+
+/*****************************************************************************
+                    Specification of variables area
+*****************************************************************************/
+lst = 0;
+first = 1;
+
+/*define the independent varaibles for the threshold*/
+let thrshvar = {
+UNO
+NOSTRET
+LIGHT
+
+
+
+};
+
+/* defining the names of the independant variables in the threshold specification */
+
+ivnamet =  thrshvar';
+
+
+/* define the independant vars for the unordered choice models */
+/* no constant in the ordered model. */
+
+let indvar = {
+UNO
+YIELD
+
+
+
+ }; 
+
+/****** defining the names of the independant variables for unordered choice model *******/
+ivnameo =  indvar';
+
+{vo, voindx} = indices(dataset,indvar');
+{vo, vtindx} = indices(dataset,thrshvar');
+
+/* the ordered response variable should be 0,1,2,... */
+{choseo,chooindx} = indices(dataset,"ACCNEW");
+
+/*number of explanatory variables in orderd choice model */
+nvar = rows(indvar');      
+ncov = nvar;
+
+/*Number of explanatory variables in threshold specification*/      
+nvart = rows(thrshvar');
+
+/*Weights on the dependent variable*/
+{wghto,wtoindx} = indices(dataset,"UNO");
+
+/***********************Restructuring the data as needed by the code*********************/
+
+open dt = ^dataset for read;
+tempdata = readr(dt,nobser);
+closeall dt;
+
+
+/*Number of categories of the dependent variable*/
+numoalt = maxc(tempdata[.,chooindx])+1;  
+
+/*Number of thresholds*/
+ncon=numoalt-1;  
+
+/*Number of thresholds you are estimating actually*/
+ncon_act = 4;
+
+xvar = tempdata[.,voindx];
+
+xtilda = {};
+for i(1,nocc,1);
+    xtilda = xtilda|(xvar[(i-1)*nind+1,.]~(zeros(nvar*(nind-1),1))');
+    for j(1,nind-2,1);
+        xtilda = xtilda|(zeros(j*nvar,1)'~xvar[(i-1)*nind+j+1,.]~zeros((nind-j-1)*nvar,1)');
+    endfor;
+    xtilda = xtilda|(zeros(nvar*(nind-1),1)'~xvar[i*nind,.]);
+endfor;
+
+/* *******************************************************************************************
+                                       MAIN PROGRAM AREA
+********************************************************************************************/
+
+clearg _max_gradproc;
+_max_Maxiters = 100;
+_max_gradtol = 5e-4;
+_Max_GradProc=&lgd;     
+_max_Options = { bfgs stepbt };
+_max_CovPar = 1;
+
+/****************************Provide the starting values here*********************************/
+
+blambda = {
+1.8308
+0.4126
+0.51
+
+};
+
+balpha = seqa(0,0.25,ncon_act)';
+
+
+balpha = {
+0
+0.2409
+0.7558
+0.9725
+};
+
+bprop = {
+0
+-1.2679
+
+0.6304
+1.1293
+
+
+100
+1.0259
+
+};
+
+b =blambda'|balpha'|bprop';
+
+bdimord = {
+1
+1
+
+};
+
+bdimord = bdimord';
+
+EQMAT1 = eye(ncon_act);
+EQMAT2 = ones(ncon-ncon_act,1).*(zeros(1,ncon_act-1)~1);
+
+EQMAT = EQMAT1|EQMAT2;
+ 
+
+/*************************************Fixing the paramters************************************/
+//If you are not estimating the mixing on any paramter provide a value of "0" at the corresponding 
+//location in the _max_active vector
+
+_max_active = ones(nvart,1)|0|ones(ncon_act-1,1)|0|ones(nvar-1,1)|bdimord|0|1;
+//_max_active = 0*ones(nvart,1)|0|0*ones(ncon_act-1,1)|0|0*ones(nvar-1,1)|0*bdimord|0|1;
+
+ /* associating columns with variable names for output */
+threlbg =  0 $+ "THRESH" $+ ftocv(seqa(2,1,ncon_act),2,0);
+_max_ParNames = thrshvar'|threlbg|indvar'|indvar'|"Rho"|"Delta";
+
+_title = "Spatial Error Model with mixing, auto-correlation and spatial correaltion using CML ";
+
+dummy = 0;
+gdummy = 0;
+
+i=1; selmat ={};
+do until i gt rows(b);
+  if _max_active[i]==1;
+  selmat = selmat~i;
+  endif;
+i=i+1;
+endo;
+
+{x,f,g,cov,retcode} = maxprt(maxlik(tempdata,0,&lpr,b));
+
+
+bhess = _max_finalhess * nobser;
+
+OUTPUT FILE="C:\Rajesh\Study\Codes\Hessian.txt" ON;
+bhess;
+
+
+/* *******************************************************************************************
+                           No Modification Needed Below This Line
+********************************************************************************************/
+
+/************************* Start of liklihood function for ordered response *************/
+proc lpr(x,dta);
+
+local y,tu,tl,cdfu,cdfl,cdfd,lnz;
+local tu1, tl1,as,r,err,p3ord, p0ord,w,z1,nuu,weigh,e1, nuu1, nupers,p4ord,err1,temp1, firstobs,lastobs,nii,xsigord;
+local p1,p4,xdiag,xcov,xcorr, xcorrp,k,m, tu2,tl2,rsigord, rsigord1,a,nobs,nkeep,keep,keepcase,j,dsigord,t,icount,jcount;
+local thresh1, thresh, thresh2;
+local log_lambda,tot_thresh,tot_thresh3,tot_thresh5,tot_thresh1,lambda,cthresh,count,i,Sq,xcorr1;
+/* y is the dependant variable */
+/* rows = rows(dta)   columns =1 */
+
+lst = lst+rows(dta);
+ if first;
+   nupers = dta[.,1];
+   first = 0;
+ else;
+   nupers = keepcase | dta[.,1];
+   dta    = keep | dta;
+ endif;
+
+log_lambda = dta[.,vtindx]*x[1:nvart];
+lambda = exp(log_lambda);
+count =1; 
+tot_thresh={};
+tot_thresh1={};
+do until count gt nobser;
+    i =1; thresh={}; 
+    do until i gt ncon+1;
+        thresh = thresh|lambda[count]^(i-1)/exp(lnfact(i-1));  
+        i = i+1;
+    endo;
+    tot_thresh = tot_thresh~thresh;
+    
+    thresh1 = zeros(ncon+1,1);
+
+    for i(1,ncon+1,1);
+        for j(1,i,1);
+            thresh1[i] = thresh1[i] + thresh[j];
+        endfor;
+    endfor;
+    tot_thresh1 = tot_thresh1~thresh1;
+    count = count + 1;
+endo;
+
+tot_thresh1 = tot_thresh1 .* exp(-lambda)';
+tot_thresh1 = (tot_thresh1.>1) + tot_thresh1.*((tot_thresh1.>=0).* (tot_thresh1.<1)) + (tot_thresh1.<0).*0;
+tot_thresh1 = cdfni(tot_thresh1);
+tot_thresh1 = tot_thresh1[1:ncon,.];
+
+
+cthresh = EQMAT*x[nvart+1:nvart+ncon_act];
+//cthresh = 0|cthresh;
+
+tot_thresh1 = tot_thresh1 +cthresh;
+
+
+y = dta[.,chooindx]+1;
+
+e1 = rows(dta);
+nuu1 = unique(nupers,1);
+
+nuu = dta[.,1];
+nii = rows(nuu1);
+ 
+ if not lst == nobser;
+   nobs = maxindc(nupers) - 1;
+   nkeep = rows(dta) - nobs;
+   keep = trimr(dta, nobs, 0);
+   keepcase = trimr(nupers, nobs, 0);
+   nupers = trimr(nupers,0,nkeep);
+   dta = trimr(dta,0,nkeep);
+ else;
+   lst = 0;
+   first = 1;
+ endif;
+
+xsigord = x[ncon_act+nvart+nvar+1:rows(x)-2];
+xsigord = diagrv(eye(ncov),xsigord);
+xcov = xsigord*xsigord';
+
+rsigord = 1/(1+exp(x[rows(x)-1])); 
+dsigord = 1/(1+exp(x[rows(x)])); 
+
+ 
+ i =1; rsigord1={}; a ={};
+ do until i gt nocc;
+  rsigord1 = rsigord1|rsigord^(i-1);  
+  i = i+1;
+ endo;
+
+ i=1; 
+ a={}; 
+ do until i gt nocc; 
+  a=a~lagn(rsigord1,i-1);
+  i=i+1; 
+ endo; 
+
+ rsigord1 =lowmat(xpnd(vech(a))');
+ rsigord1 = rsigord1+diagrv(rsigord1',zeros(nocc,1));
+ 
+ Sq = inv(eye(nii)-dsigord*weights);
+ xcorr = eye(nocc).*.Sq;
+ xcorr1 = xcorr;
+ t = xcorr*xvar*x[ncon_act+nvart+1:rows(x)-ncov-2];
+ xcorr = doThisComplexProduct(Sq, Sq, xvar, xcov);
+ xcorr = xcorr + xcorr1*(rsigord1.*.eye(nii))*xcorr1';
+ //xcorr = xcorr*xtilda*(eye(nii).*.xcov)*xtilda'*xcorr' + xcorr*(rsigord1.*.eye(nii))*xcorr';
+ xdiag = diag(xcorr);
+
+p4ord = {};
+icount = 1;
+do until icount gt nobser;
+    p4 =0;
+    jcount = icount + 1;
+    
+    for i (jcount, nobser, 1);
+    if (dband[icount,i]==1);     
+       tu1 = (submat(minf|tot_thresh1[1:ncon,icount]|inf,y[icount]+1,0) - t[icount,.])/sqrt(xdiag[icount]);
+       tl1 = (submat(minf|tot_thresh1[1:ncon,icount]|inf,y[icount],0) - t[icount,.])/sqrt(xdiag[icount]);
+    
+       tu2 = (submat(minf|tot_thresh1[1:ncon,i]|inf,y[i]+1,0) - t[i,.])/sqrt(xdiag[i]);
+       tl2 = (submat(minf|tot_thresh1[1:ncon,i]|inf,y[i],0) - t[i,.])/sqrt(xdiag[i]);
+    
+       xcorrp = xcorr[icount,i]/sqrt(xdiag[icount]*xdiag[i]);
+      
+       p1 = (cdfbvn(tu1,tu2,xcorrp) - cdfbvn(tu1,tl2,xcorrp) -cdfbvn(tl1,tu2,xcorrp) + cdfbvn(tl1,tl2,xcorrp));
+    
+       p1 = (p1 .> 0.000001).*p1 +  (p1 .< 0.000001).* (0.000001);
+       
+       p4 = p4 + (ln(p1)); 
+    endif; 
+    endfor;
+    icount = icount+1;
+    p4ord = p4ord|p4;    
+endo;
+clear xcorr,xdiag;
+/* cdfu and cdfl are respectively the normal cdfs at the upper and lower levels */
+/* cdfd is the probability of the observed alternative */
+/* rows = rows(dta)    columns = 1 */
+
+ retp(sumc(p4ord));
+
+
+ endp;
+/************************* end of liklihood function for ordered response *************/
+
+proc lgd(x,dta);
+
+local y,tu,tl,cdfu,cdfl,cdfd,lnz;
+local tu1, tl1,as,r,err,p3ord, p0ord,w,z1,nuu,weigh,e1, nuu1, nupers,p4ord,err1,temp1, firstobs,lastobs,nii,xsigord;
+local p1,p4,xdiag,xcov,xcorr, xcorrp,k,m, tu2,tl2,rsigord, rsigord1,a;
+local gvart, gcort,grhot,q,delta1,xcorrp0,xcorrp1,xcorrp2,gcorr,gvart1,
+      gcort1,grhot1,dux11,dux12,dux21,dux22,dux31,dux32,dux41,dux42,gvar1,
+      gvar2,gvar3,gvar4,gvar,duc11,duc12,duc21,duc22,duc31,duc32,duc41,duc42,
+      a11,ca11,a12, ca12,a13,ca13,a14,ca14,count,gv1,gv2,drho1,drho2,drho,
+      gcor1,gcor2,gcor3,gcor4,gcor,gcv1,grho2,grho3,grho4,grho1,grho,v1,v2,cv1, gthresh,
+      duxu1,duxu2,duxl1,duxl2,ca2,duxcu1,duxcu2,duxcl1,duxcl2, masknew1,masknew2,maskl1,
+      maskl2,masku1,masku2,gthresh11,gthresh12,ca1,gthrsht1,gthrsht, ca21,ca22,ca,gi,rho,
+      rho1,rho2,xprod,omat,mask,xc,fmt,amat,xrho,xamat,icount,jcount,se,seout,tsout,fin, gradmat,xgradmat,xgradmat2,euxu1,euxu2,euxl1,euxl2,fux1,fux2,fux3,fux4;
+local xphi1,xphi2,phi1,phi2,phi3,gphi1t,gphi1,gphi1t1,gphi2t,gphi2,gphi2t1,gradmat1,xgradmat1,gradmat2,gspat;
+local nkeep,keep,keepcase,dsigord,t,gspat1,nobs,gcholt,gcholt1,gspa,xcorr1,j;
+local thresh3,thresh1,gthresh1,thresh;
+local thresh4, thresh5, g1, gthrshg,gthrshg1,gthreshg,temp;
+local tot_thresh3,tot_thresh1,tot_thresh5,lambda,log_lambda,tot_thresh,cthresh,i,Sq;
+local time1,time2,Score;
+local totJ, subJ, Ng;
+
+/* y is the dependant variable */
+/* rows = rows(dta)   columns =1 */
+time1=gettime();
+
+nupers = dta[.,1];
+log_lambda = dta[.,vtindx]*x[1:nvart];
+lambda = exp(log_lambda);
+count =1; 
+tot_thresh={};
+tot_thresh1={};
+do until count gt nobser;
+    i =1; thresh={}; 
+    do until i gt ncon+1;
+        thresh = thresh|lambda[count]^(i-1)/exp(lnfact(i-1));  
+        i = i+1;
+    endo;
+    tot_thresh = tot_thresh~thresh;
+    
+    thresh1 = zeros(ncon+1,1);
+
+    for i(1,ncon+1,1);
+        for j(1,i,1);
+            thresh1[i] = thresh1[i] + thresh[j];
+        endfor;
+    endfor;
+    tot_thresh1 = tot_thresh1~thresh1;
+    count = count + 1;
+endo;
+
+tot_thresh1 = tot_thresh1 .* exp(-lambda)';
+tot_thresh3 = (tot_thresh1.>1) + tot_thresh1.*((tot_thresh1.>=0).* (tot_thresh1.<1)) + (tot_thresh1.<0).*0;
+tot_thresh1 = cdfni(tot_thresh3);
+
+tot_thresh5 = tot_thresh1;
+tot_thresh1 = tot_thresh1[1:ncon,.];
+cthresh = EQMAT*x[nvart+1:nvart+ncon_act];
+tot_thresh1 = tot_thresh1 +cthresh;
+
+
+gthresh1 = lagn(tot_thresh3,1);
+gthresh1[1,.] = zeros(nobser,1)';
+gthresh1 = -tot_thresh3+gthresh1;
+gthresh1 = gthresh1';
+gthresh1 = gthresh1./pdfn(tot_thresh5');
+gthresh1 = zeros(nobser,1)~gthresh1;
+
+y = dta[.,chooindx]+1;
+
+e1 = rows(dta);
+nuu1 = unique(nupers,1);
+nuu = dta[.,1];
+nii = rows(nuu1);
+
+xsigord = x[ncon_act+nvart+nvar+1:rows(x)-2];
+xsigord = diagrv(eye(ncov),xsigord);
+xcov = xsigord*xsigord';
+
+rsigord = 1/(1+exp(x[rows(x)-1])); 
+dsigord = 1/(1+exp(x[rows(x)])); 
+ 
+ i =1; rsigord1={}; a ={};
+ do until i gt nocc;
+  rsigord1 = rsigord1|rsigord^(i-1);  
+  i = i+1;
+ endo;
+
+ i=1; 
+ a={}; 
+ do until i gt nocc; 
+  a=a~lagn(rsigord1,i-1);
+  i=i+1; 
+ endo; 
+
+/*For gradient of auto-correlation paramter*/
+gi=1;
+rho1 = {};
+rho=rsigord;
+do until gi gt nocc;
+ rho1 = rho1|(gi-1)*rho^(gi-2);
+ gi=gi+1;
+endo;
+
+gi=1;
+rho2 = {};
+do until gi gt nocc;
+    if gi !=nocc;
+        rho2 = rho2|(rev(rho1[1:gi])'~rho1[2:nocc-gi+1]');
+    endif;
+    if gi==nocc;
+        rho2 = rho2|rev(rho1[1:gi])';
+    endif;
+    gi = gi+1;
+endo;
+
+
+ rsigord1 =lowmat(xpnd(vech(a))');
+ rsigord1 = rsigord1+diagrv(rsigord1',zeros(nocc,1));
+ 
+ Sq = inv(eye(nii)-dsigord*weights);
+ xcorr = eye(nocc).*.Sq;
+ t = xcorr*xvar*x[nvart+ncon_act+1:rows(x)-ncov-2];
+ 
+ xamat = xcorr*xvar;
+ xcorr1 = xcorr;
+ clear xcorr;
+ gradmat2 = Sq*weights*Sq;
+ gradmat1 = eye(nocc).*.gradmat2;
+ gradmat = doThisComplexProduct(gradmat2, Sq, xvar, xcov) + doThisComplexProduct(Sq, gradmat2, xvar, xcov);
+ gradmat = gradmat + gradmat1'*(rsigord1.*.eye(nii))*xcorr1 + gradmat1*(rsigord1.*.eye(nii))*xcorr1';
+
+ xgradmat = gradmat1*xvar*x[nvart+ncon_act+1:rows(x)-2-ncov]; 
+ clear temp, gradmat1;
+
+ xcorr = doThisComplexProduct(Sq, Sq, xvar, xcov);
+ xcorr = xcorr + xcorr1*(rsigord1.*.eye(nii))*xcorr1';
+
+ xdiag = diag(xcorr);
+ xcorrp2 = rho2*(-rsigord+rsigord^2);
+ xcorrp2 = xcorr1*(xcorrp2.*.eye(nii))*xcorr1';
+ 
+/*Gradient Starts*/
+gthrsht = zeros(nobser,nvart);
+gthrshg = zeros(nobser,ncon_act);
+gvart = zeros(nobser,nvar);
+gcort = zeros(nobser,ncov);
+grhot = zeros(nobser, 1);
+gspat = zeros(nobser,1);
+
+
+
+icount = 1;
+do until icount gt nobser;       
+    gthrsht1 = zeros(nvart,1)';
+    gthrshg1 = zeros(ncon,1)';
+    gvart1 = zeros(nvar,1)';
+    grhot1 =zeros(1,1)';
+    gspat1 =zeros(1,1)';
+    jcount = icount + 1;
+
+for i (jcount, nobser, 1);
+       if (dband[icount,i]==1);    
+       tu1 = (submat(minf|tot_thresh1[1:ncon,icount]|inf,y[icount]+1,0) - t[icount,.])/sqrt(xdiag[icount]);
+       tl1 = (submat(minf|tot_thresh1[1:ncon,icount]|inf,y[icount],0) - t[icount,.])/sqrt(xdiag[icount]);
+    
+       tu2 = (submat(minf|tot_thresh1[1:ncon,i]|inf,y[i]+1,0) - t[i,.])/sqrt(xdiag[i]);
+       tl2 = (submat(minf|tot_thresh1[1:ncon,i]|inf,y[i],0) - t[i,.])/sqrt(xdiag[i]);
+    
+       xcorrp = xcorr[icount,i]/sqrt(xdiag[icount]*xdiag[i]);
+      
+       p1 = (cdfbvn(tu1,tu2,xcorrp) - cdfbvn(tu1,tl2,xcorrp) -cdfbvn(tl1,tu2,xcorrp) + cdfbvn(tl1,tl2,xcorrp));
+    
+       p1 = (p1 .> 0.000001).*p1 +  (p1 .< 0.000001).* (0.000001);
+     
+    // Gradient of threshold paramter lambda
+
+       masknew1 = reshape(seqa(1,1,ncon+2)',rows(y[icount]),ncon+2);
+       masknew2 = reshape(seqa(1,1,ncon+2)',rows(y[i]),ncon+2);
+
+       maskl1 = masknew1.==(y[icount]);
+       masku1 = masknew1.==(y[icount]+1);
+
+       maskl2 = masknew2.==(y[i]);
+       masku2 = masknew2.==(y[i]+1);
+
+        ca11 = (((pdfn(tu1)./ sqrt(xdiag[icount]) .* cdfn ((tu2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+                ((pdfn(tu1)./ sqrt(xdiag[icount]) .* cdfn ((tl2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))).* masku1 ; 
+  
+        ca12 = (-((pdfn(tl1)./ sqrt(xdiag[icount]) .* cdfn ((tu2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+                 ((pdfn(tl1)./ sqrt(xdiag[icount]) .* cdfn ((tl2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))).* maskl1 ;
+
+        ca21 = (((pdfn(tu2)./ sqrt(xdiag[i]) .* cdfn ((tu1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+                ((pdfn(tu2)./ sqrt(xdiag[i]) .* cdfn ((tl1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))).* masku2;
+
+        ca22 = (-((pdfn(tl2)./ sqrt(xdiag[i]) .* cdfn ((tu1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+                 ((pdfn(tl2)./ sqrt(xdiag[i]) .* cdfn ((tl1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp)))))).* maskl2 ;
+
+        gthresh = (ca11 + ca12 + ca21 +ca22);
+        
+        gthresh = sumc(((ca11 + ca12).*gthresh1[icount,.])').*lambda[icount].*dta[icount,vtindx] + sumc(((ca21 +ca22).*gthresh1[i,.])').*lambda[i].*dta[i,vtindx];
+     // Gradient of thresholds
+
+       masknew1 = reshape(seqa(1,1,ncon+2)',rows(y[icount]),ncon+2);
+       masknew2 = reshape(seqa(1,1,ncon+2)',rows(y[i]),ncon+2);
+
+       maskl1 = masknew1.==(y[icount]);
+       masku1 = masknew1.==(y[icount]+1);
+
+       maskl2 = masknew2.==(y[i]);
+       masku2 = masknew2.==(y[i]+1);
+
+        ca11 = (((pdfn(tu1)./ sqrt(xdiag[icount]) .* cdfn ((tu2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+                ((pdfn(tu1)./ sqrt(xdiag[icount]) .* cdfn ((tl2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))).* masku1 ; 
+  
+        ca12 = (-((pdfn(tl1)./ sqrt(xdiag[icount]) .* cdfn ((tu2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+                 ((pdfn(tl1)./ sqrt(xdiag[icount]) .* cdfn ((tl2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))).* maskl1 ;
+
+        ca21 = (((pdfn(tu2)./ sqrt(xdiag[i]) .* cdfn ((tu1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+                ((pdfn(tu2)./ sqrt(xdiag[i]) .* cdfn ((tl1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))).* masku2;
+
+        ca22 = (-((pdfn(tl2)./ sqrt(xdiag[i]) .* cdfn ((tu1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+                 ((pdfn(tl2)./ sqrt(xdiag[i]) .* cdfn ((tl1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp)))))).* maskl2 ;
+
+        gthreshg = (ca11 + ca12 + ca21 +ca22);
+        
+        gthreshg = gthreshg[.,2:ncon+1];
+
+// Gradient of the beta elements
+       
+       duxu1 = -pdfn(tu1).* xamat[icount,.] ./ sqrt(xdiag[icount]);
+       duxu2 = -pdfn(tu2).* xamat[i,.] ./ sqrt(xdiag[i]);
+       
+       duxl1 = -pdfn(tl1).* xamat[icount,.] ./ sqrt(xdiag[icount]);
+       duxl2 = -pdfn(tl2).*xamat[i,.] ./ sqrt(xdiag[i]);
+
+    
+       ca1 = (((duxu1 .* cdfn ((tu2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxu1 .* cdfn ((tl2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxl1 .* cdfn ((tu2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+              ((duxl1 .* cdfn ((tl2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))) ;
+
+       ca2 = (((duxu2 .* cdfn ((tu1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxl2 .* cdfn ((tu1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxu2 .* cdfn ((tl1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+              ((duxl2 .* cdfn ((tl1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp))))));
+
+       gvar = (ca1+ca2);
+
+  //Gradient of the auto correlation parameter
+
+       
+       duxcu1 = -pdfn(tu1).* tu1 ./ 2 ./ ((xdiag[icount]));
+       duxcu2 = -pdfn(tu2).* tu2 ./ 2 ./ ((xdiag[i]));
+ 
+       duxcl1 = -pdfn(tl1).* tl1 ./ 2 ./ ((xdiag[icount]));
+       duxcl2 = -pdfn(tl2).* tl2 ./ 2 ./ ((xdiag[i]));
+
+       a11 = (( tu1^2 - (2 .* xcorrp .* tu1 .* tu2) + tu2^2) ./ (2 .* (1-xcorrp^2)));
+       ca11 = exp(-a11) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+
+       a12 = (( tu1^2 - (2 .* xcorrp .* tu1 .* tl2) + tl2^2) ./ (2 .* (1-xcorrp^2)));
+       ca12 = exp(-a12) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+
+       a13 = (( tu2^2 - (2 .* xcorrp .* tl1 .* tu2) + tl1^2) ./ (2 .* (1-xcorrp^2)));
+       ca13 = exp(-a13) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+
+       a14 = (( tl1^2 - (2 .* xcorrp .* tl1 .* tl2) + tl2^2) ./ (2 .* (1-xcorrp^2)));
+       ca14 = exp(-a14) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+       
+       ca = (ca11-ca12-ca13+ca14);
+
+      if _max_active[nvart+ncon_act+nvar+nvar+1] ne 0;
+
+       
+       gv1 = submat(xcorrp2, icount, icount);
+       gv2 = submat(xcorrp2, i, i);
+       gcv1 = submat(xcorrp2, icount, i);
+
+       drho1 = sqrt(xdiag[icount]).* sqrt(xdiag[i]) .* gcv1;
+       drho2 = sqrt(xdiag[i]) .* gv1 ./ sqrt(xdiag[icount]);
+       drho2 = drho2 + (sqrt(xdiag[icount]) .* gv2 ./ sqrt(xdiag[i]));
+       drho2 = drho2 .* xcorr[icount,i] ./ 2;
+       drho = (drho1 - drho2) ./ (xdiag[icount] .* xdiag[i]);
+
+       grho1 = (duxcu1.*cdfn((tu2-(tu1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1)-
+           (duxcu1.*cdfn((tl2-(tu1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1)-
+           (duxcl1.*cdfn((tu2-(tl1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1)+
+           (duxcl1.*cdfn((tl2-(tl1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1);
+
+       grho2 = (duxcu2.*cdfn((tu1-(tu2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2)-
+           (duxcu2.*cdfn((tl1-(tu2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2)-
+           (duxcl2.*cdfn((tu1-(tl2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2)+
+           (duxcl2.*cdfn((tl1-(tl2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2);
+
+       grho = grho1+grho2+ ca.*drho;
+     endif;
+     if _max_active[nvart+ncon_act+nvar+nvar+1] == 0;
+        grho = 0;
+     endif;
+
+
+// Gradient of the spatial correlation parameter
+
+
+
+        duxu1 = pdfn(tu1).* (-sqrt(xdiag[icount])*xgradmat[icount] - 0.5.*tu1*gradmat[icount,icount]) ./ (xdiag[icount]);
+        duxu2 = pdfn(tu2).* (-sqrt(xdiag[i])*xgradmat[i] - 0.5.*tu2*gradmat[i,i]) ./ (xdiag[i]);
+     
+        duxl1 = pdfn(tl1).* (-sqrt(xdiag[icount])*xgradmat[icount] - 0.5.*tl1*gradmat[icount,icount]) ./ (xdiag[icount]);
+        duxl2 = pdfn(tl2).* (-sqrt(xdiag[i])*xgradmat[i] - 0.5.*tl2*gradmat[i,i]) ./ (xdiag[i]);
+
+
+       ca1 = (((duxu1 .* cdfn ((tu2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxu1 .* cdfn ((tl2 - xcorrp .*tu1) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxl1 .* cdfn ((tu2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+              ((duxl1 .* cdfn ((tl2 - xcorrp .*tl1) ./ sqrt(1-(xcorrp.*xcorrp)))))) ;
+
+       ca2 = (((duxu2 .* cdfn ((tu1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxl2 .* cdfn ((tu1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp)))))-
+              ((duxu2 .* cdfn ((tl1 - xcorrp .*tu2) ./ sqrt(1-(xcorrp.*xcorrp)))))+
+              ((duxl2 .* cdfn ((tl1 - xcorrp .*tl2) ./ sqrt(1-(xcorrp.*xcorrp))))));
+
+
+       a11 = (( tu1^2 - (2 .* xcorrp .* tu1 .* tu2) + tu2^2) ./ (2 .* (1-xcorrp^2)));
+       ca11 = exp(-a11) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+
+       a12 = (( tu1^2 - (2 .* xcorrp .* tu1 .* tl2) + tl2^2) ./ (2 .* (1-xcorrp^2)));
+       ca12 = exp(-a12) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+
+       a13 = (( tu2^2 - (2 .* xcorrp .* tl1 .* tu2) + tl1^2) ./ (2 .* (1-xcorrp^2)));
+       ca13 = exp(-a13) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+
+       a14 = (( tl1^2 - (2 .* xcorrp .* tl1 .* tl2) + tl2^2) ./ (2 .* (1-xcorrp^2)));
+       ca14 = exp(-a14) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+       
+       ca = (ca11-ca12-ca13+ca14);
+
+       drho1 = sqrt(xdiag[icount]).* sqrt(xdiag[i]) .* gradmat[icount,i];
+       drho2 = sqrt(xdiag[i]) .* gradmat[icount,icount] ./ sqrt(xdiag[icount]);
+       drho2 = drho2 + (sqrt(xdiag[icount]) .* gradmat[i,i] ./ sqrt(xdiag[i]));
+       drho2 = drho2 .* xcorr[icount,i] ./ 2;
+       drho = (drho1 - drho2) ./ (xdiag[icount] .* xdiag[i]);
+
+       gspa = ca1 + ca2 + ca.*drho;
+
+       gspa = gspa*(-dsigord+dsigord^2);
+
+       gthrsht1 = gthrsht1 + gthresh ./ p1;
+       gthrshg1 = gthrshg1 + gthreshg ./ p1;
+       gvart1 = gvart1 + gvar ./ p1;
+       grhot1 = grhot1 + grho ./ p1;
+       gspat1 = gspat1 + gspa ./ p1;
+    endif;
+
+endfor;
+
+
+
+gthrsht[icount,.] = gthrsht1;
+gthrshg[icount,.] = gthrshg1[1:ncon_act-1]~sumc(gthrshg1[ncon_act:ncon]');
+gvart[icount,.] = gvart1;
+grhot[icount,.] = grhot1;
+gspat[icount,.] = gspat1;
+
+icount = icount+1;
+
+endo;
+
+//Gradient of the covariance elements
+
+ for q  (1, ncov,1);
+   if _max_active[nvart+ncon_act+nvar+q] ne 0;
+   delta1 = zeros(ncov, ncov);
+   delta1[q,q]=1;
+   xcorrp0 = (xsigord *delta1) +  (xsigord *delta1)';
+   gcorr = doThisComplexProduct(Sq, Sq, xvar, xcorrp0);
+   icount = 1;
+   do until icount gt nobser;       
+        gcort1 = zeros(1,1);
+        jcount = icount + 1;
+        for i (jcount, nobser, 1);
+            if (dband[icount,i]==1);       
+
+             tu1 = (submat(minf|tot_thresh1[1:ncon,icount]|inf,y[icount]+1,0) - t[icount,.])/sqrt(xdiag[icount]);
+             tl1 = (submat(minf|tot_thresh1[1:ncon,icount]|inf,y[icount],0) - t[icount,.])/sqrt(xdiag[icount]);
+
+             tu2 = (submat(minf|tot_thresh1[1:ncon,i]|inf,y[i]+1,0) - t[i,.])/sqrt(xdiag[i]);
+             tl2 = (submat(minf|tot_thresh1[1:ncon,i]|inf,y[i],0) - t[i,.])/sqrt(xdiag[i]);
+
+             xcorrp = xcorr[icount,i]/sqrt(xdiag[icount]*xdiag[i]);
+  
+             p1 = (cdfbvn(tu1,tu2,xcorrp) - cdfbvn(tu1,tl2,xcorrp) -cdfbvn(tl1,tu2,xcorrp) + cdfbvn(tl1,tl2,xcorrp));
+
+             p1 = (p1 .> 0.000001).*p1 +  (p1 .< 0.000001).* (0.000001);
+
+             gv1 = gcorr[icount,icount];
+             gv2 = gcorr[i, i];
+             gcv1 =gcorr[icount, i];
+
+             drho1 = sqrt(xdiag[icount]).* sqrt(xdiag[i]) .* gcv1;
+             drho2 = sqrt(xdiag[i]) .* gv1 ./ sqrt(xdiag[icount]);
+             drho2 = drho2 + (sqrt(xdiag[icount]) .* gv2 ./ sqrt(xdiag[i]));
+             drho2 = drho2 .* xcorr[icount,i] ./ 2;
+             drho = (drho1 - drho2) ./ (xdiag[icount] .* xdiag[i]);
+
+           duxcu1 = -pdfn(tu1).* tu1 ./ 2 ./ ((xdiag[icount]));
+           duxcu2 = -pdfn(tu2).* tu2 ./ 2 ./ ((xdiag[i]));
+     
+           duxcl1 = -pdfn(tl1).* tl1 ./ 2 ./ ((xdiag[icount]));
+           duxcl2 = -pdfn(tl2).* tl2 ./ 2 ./ ((xdiag[i]));
+    
+           a11 = (( tu1^2 - (2 .* xcorrp .* tu1 .* tu2) + tu2^2) ./ (2 .* (1-xcorrp^2)));
+           ca11 = exp(-a11) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+    
+           a12 = (( tu1^2 - (2 .* xcorrp .* tu1 .* tl2) + tl2^2) ./ (2 .* (1-xcorrp^2)));
+           ca12 = exp(-a12) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+    
+           a13 = (( tu2^2 - (2 .* xcorrp .* tl1 .* tu2) + tl1^2) ./ (2 .* (1-xcorrp^2)));
+           ca13 = exp(-a13) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+    
+           a14 = (( tl1^2 - (2 .* xcorrp .* tl1 .* tl2) + tl2^2) ./ (2 .* (1-xcorrp^2)));
+           ca14 = exp(-a14) ./ (2.* pi .* sqrt(1 - xcorrp^2)) ;
+           
+           ca = (ca11-ca12-ca13+ca14);
+
+
+             gcor1 = (duxcu1.*cdfn((tu2-(tu1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1)-
+                        (duxcu1.*cdfn((tl2-(tu1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1)-
+                        (duxcl1.*cdfn((tu2-(tl1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1)+
+                        (duxcl1.*cdfn((tl2-(tl1 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv1);
+
+             gcor2 = (duxcu2.*cdfn((tu1-(tu2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2)-
+                        (duxcu2.*cdfn((tl1-(tu2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2)-
+                        (duxcl2.*cdfn((tu1-(tl2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2)+
+                        (duxcl2.*cdfn((tl1-(tl2 .* xcorrp)) ./ sqrt(1-xcorrp^2)).* gv2);
+
+             gcor = gcor1+gcor2+ ca.*drho;
+
+             gcort1 = gcort1 + gcor ./ p1; 
+
+             endif;
+        endfor;
+        gcort[icount,q] = gcort1;
+        icount = icount+1;
+   endo;
+   endif;
+   if _max_active[nvart+ncon_act+nvar+q] eq 0;
+      gcort[.,q] = zeros(nobser,1);
+   endif;
+ endfor; 
+
+
+clear xgradmat,xamat,gcorr,gradmat,xcorr,xcorr1;
+
+time2=gettime();
+time2-time1;
+
+Score = gthrsht~gthrshg~gvart~gcort~grhot~gspat;
+
+//retp(gthrsht~gthrshg~gvart~gcort~grhot~gspat);
+retp(sumc(Score)');
+endp;
+
+/************************* end of gradient of the liklihood function for ordered response *************/
+
+
+
+proc doThisComplexProduct(firstMat, secondMat, dta, capSigma);
+    local check, calcProduct,checkthis,checkthat;
+    local ichocc, jchocc, inc,jnc, iind,jind, AStart, BStart, interMedMat,expander,tempProVal,ddel_varY_t1_2,Sqn;
+
+
+
+    calcProduct = zeros(nobser,nobser);
+    for ichocc (1,nocc,1);
+        for jchocc (1,nocc,1);
+            for iind (1,nind,1);
+                checkthis = zeros(1,nvar);checkthat = zeros(1,nvar);
+                checkthis = xvar[(ichocc-1)*nind+iind,1:nvar];
+                checkthat = xvar[(jchocc-1)*nind+iind,1:nvar];
+                AStart = (ichocc-1)*nind+(iind-1);
+                BStart = (jchocc-1)*nind+(iind-1);
+                calcProduct[AStart+1:AStart+1,BStart+1:BStart+1] = checkthis*capSigma*checkthat';
+            endfor;
+        endfor;
+    endfor;
+
+        interMedMat = zeros(nobser,nobser);
+
+    Sqn =  firstMat;   
+    for ichocc (1,nocc,1);
+        interMedMat[(ichocc-1)*nind+1:ichocc*nind,.] = Sqn*calcProduct[(ichocc-1)*nind+1:ichocc*nind,.];    
+    endfor;
+
+    Sqn =  secondMat;   
+    for ichocc (1,nocc,1);
+        calcProduct[.,(ichocc-1)*nind+1:ichocc*nind] = interMedMat[.,(ichocc-1)*nind+1:ichocc*nind]*Sqn';    
+    endfor;
+
+        clear interMedMat;
+
+
+
+    retp(calcProduct);
+endp;
+
+proc gettime();
+    local currTime, timeSecs;
+    currTime = time();
+    timeSecs = currTime[4]/100+ currTime[3]+ currTime[2]*60+ currTime[1]*3600;
+    retp(timeSecs);
+endp;

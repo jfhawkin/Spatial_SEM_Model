@@ -1,0 +1,167 @@
+new;
+library cml;
+CMLset;
+
+/******************************************************************************
+                 Data and Model Specification
+******************************************************************************/
+/* number of observations */
+nobs = 2000;
+nsims = 100;
+//__row = 1000;
+
+/* Specify the database connnection */
+//id = dbAddDatabase("PSQL");
+//dbSetHostName(id, "localhost");
+//dbSetPort(id, 5432);
+//dbSetDatabaseName(id, "TTS_2016");
+//dbSetUserName(id, "postgres");
+//dbSetPassword(id, "postgres");
+//dbOpen(id);
+//gdaCreate("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", 1);
+
+/* Initialize variables that do not vary within simulation runs */
+bvec = {};
+sigvec = {};
+
+
+/* Loop through the estimation "nsims" number of times */
+for i(1, nsims, 1);
+//    /* Query the database for "nobs" observations */
+//    ph1 = "$1";
+//    query = "SELECT sub.* FROM (SELECT * FROM public.boxcoxdata_taz ORDER BY random() LIMIT "$+ph1$+") sub ORDER BY householdid;";
+//    /* 1: uno, 2: sero, 3: householdid, 4: householdzone, 5: daycaredist, 6: facdist, 7: homedist */
+//    /* 8: shopdist, 9: othdist, 10: schooldist, 11: workdist, 12: transtrip, 13: activetrip, 14: autotrip */
+//    /* 15: gotrip, 16: taxitrip, 17: ubertrip, 18: dwelltype, 19: hhveh, 20: hhinc, 21: hhsize */
+//    /* 22: hhworkers, 23: hhstudents, 24: hhadults, 25: hhchildren, 26: hhtrips, 27: age, 28: sex */
+//    /* 29: empstat, 30 occ, 31 studstat, 32: lic, 33: transpass, 34: unusualplaceofwork, 35: worktrips */  
+//    /* 36: schooltrips, 37: taz_region, 38: taz_area_m, 39: taz_area_h, 40: taz_mun, 41: taz_pd, 42: taz_avg_price */
+//    /* 43: taz_med_price, 44: taz_new_list, 45: taz_childcare, 46: taz_school, 47: taz_shop_trips, 48: taz_pop, 49: taz_area_com */      
+//    /* 50: taz_area_gov, 51: taz_area_res, 52: taz_area_ind, 53: taz_area_park */   
+//    /*  Immediately execute query with GAUSS vector converted to string array as third argument */
+//    qid = dbExecQuery(id, query[1], ntos(nobs));
+//    dataset = dbQueryFetchAllM(qid);
+
+///******************************************************************************
+//                 Spatial Weight Matrix
+//******************************************************************************/
+//    hh = dataset[.,3];
+//    ph2  = strjoin(("$"$+ntos(seqa(1,1,nobs)))', ", ");
+//    /*  A somewhat convoluted query, but essentially pulls out the distance ijv values for the sample HH observations. */
+//    /*  Takes these observations and remaps the ij ids so they are sequential from 1-nobs. */
+//    query = "SELECT super1.dist, super2.ii AS i, super3.jj AS j FROM (SELECT sub1.dist, sub1.i, sub1.j FROM (SELECT dist, i, j
+//	FROM public.hh_dist_300k WHERE i IN ("$+ph2$+") AND j IN ("$+ph2$+") ORDER BY RANDOM()) sub1 ORDER BY i, j)super1,
+//    (SELECT sub2.i, ROW_NUMBER() OVER () AS ii FROM (SELECT DISTINCT i FROM public.hh_dist_300k WHERE i IN ("$+ph2$+")) sub2) super2,
+//    (SELECT sub3.j, ROW_NUMBER() OVER () AS jj FROM (SELECT DISTINCT j FROM public.hh_dist_300k WHERE j IN ("$+ph2$+")) sub3) super3
+//    WHERE super2.i=super1.i AND super3.j=super1.j ORDER BY i,j;";
+
+//    /*  Immediately execute query with GAUSS vector converted to string array as third argument */
+//    qid = dbExecQuery(id, query[1], ntos(hh,8));
+//    ret = dbQueryFetchAllM(qid);
+//    /* Convert input into a sparse matrix format to make correspondence between ijv into full matrix with zero in non-adjacent cells*/
+//    sparse matrix spweights;
+//    spweights = packedToSp(nobs,nobs,ret);
+//    weights = spToDense(spweights);
+        
+//    /* Proximate if distance < 1 km */
+//    dband=(weights.<1000).*(weights.>0);
+    
+//    /* Apply against boolean worker */
+//    eventvar = (dataset[.,29].==1) + (dataset[.,29].==5);
+//    dband    = dband.*eventvar;
+    
+//    print "Writing data for simulation run..." i;
+//    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", dataset, convertsatostr(strjoin(("Sample"$~ntos(i)),"_")));
+//    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", weights, convertsatostr(strjoin(("Weight"$~ntos(i)),"_")));
+//    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", dband, convertsatostr(strjoin(("Dband"$~ntos(i)),"_")));
+//    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", eventvar, convertsatostr(strjoin(("Eventvar"$~ntos(i)),"_")));
+
+///* I am thinking it will work to write the data to an archive for dband and dataset, then pull rows out in 2000 record chunks on each iteration. Would allow us to 
+//    use the same data for estimation across runs and remove the database query process, so much faster. */
+    dataset  = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Sample"$~ntos(i)),"_")));
+    weights  = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Weight"$~ntos(i)),"_")));
+    dband    = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Dband"$~ntos(i)),"_")));
+    eventvar = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Eventvar"$~ntos(i)),"_")));
+    
+    csvWriteM(dataset, convertsatostr(strjoin(("D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/sample"$~ntos(i)$~".csv"),"")));
+    csvWriteM(weights, convertsatostr(strjoin(("D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/weight"$~ntos(i)$~".csv"),"")));
+    
+/////* *******************************************************************************************
+////                                       MAIN PROGRAM AREA
+////********************************************************************************************/
+
+//    _cml_Maxiters = 100;
+//    _cml_Options = { bfgs brent };
+//    _cml_CovPar=1;  /* 0=none, 1=H^-1, 2=(gg')^-1, 3=2*1*2 */
+
+//    /* Provide the names for the exogenous variables */
+//    exogvars = {"hhveh", "hhinc"};
+//    nvars = rows(exogvars)+1;
+//    /* Parameters are lambda and rho */
+//    nparams = 2;
+
+///****************************Provide the starting values here*********************************/
+//    /* Convert distances to 10s of km */
+//    dataset[.,11] = dataset[.,11]./10^4;
+////    b = ones(nvars,1)|1|0;
+//    b = ones(nvars,1)|-0.2360679774997898;
+////    _cml_active = zeros(nvars+1,1)|ones(1,1);
+//    _cml_active = zeros(nvars,1)|0;
+////    _cml_ParNames = "CONST"|exogvars|"LAMBDA"|"RHO";
+//    _cml_ParNames = "CONST"|exogvars|"RHO";
+//    rho_Bounds = {-1 1};
+//    _cml_Bounds = -10*ones(nvars,1)~10*ones(nvars,1)|rho_Bounds;
+
+//    _title = "Box Cox Regression Model with Spatial Lags using MLE ";
+    
+//    print "Starting likelihood estimation for simulation run..." i;
+    
+//    y = dataset[.,11];
+//    ylag = dband*y;
+//    xvar = dataset[.,1]~dataset[.,19:20];
+//    xtx = xvar'*xvar;
+//    xtxi = inv(xtx);
+//    xty = xvar'*y;
+//    xtyl = xvar'*ylag;
+//    b0 = xtxi*xty;
+//    b1 = xtxi*xtyl;
+//    e0 = y-xvar*b0;
+//    e1 = ylag-xvar*b1;
+    
+//    /* Estimate a concentrated likelihood function of beta diferences (nonspatial-lagged, rho, and lambda */
+//    /* Sigma parameterized as function of error residuals */
+//    {x,f,g,cov,retcode} = CMLprt(CML(dataset,0,&lpr,b));
+    
+//    /* 1st component of full likelihood */
+//    ln2pi = ln(2*pi);
+//    /* full likelihood is result from estimation, plus terms that are constant in estimation */
+//    llik = -f-(nobs/2)*ln2pi-nobs/2;
+    
+//    /* Calculate full likelihood parameter values, given the box cox transformation of ylag (as specified by Gaudry) */
+////    lam = x[nvars+1];
+////    rho = x[nvars+2];
+//    rho = x[nvars+1];
+//    b    = b0-rho*b1;
+//    bvec   = bvec|b|rho;
+//    sigvec = sigvec|g;
+
+endfor;
+
+//dbClose(id);
+
+///************************* Start of likelihood function for Box-Cox spatial regression model *************/
+//proc lpr(x,dta);
+//    local er,sig2,nlsig2,a,clik,lam,rho,jacob;
+//    rho = x[nvars+1];
+  
+//    er = e0-rho*e1;
+//    sig2 = (er'*er)/nobs;
+//    nlsig2 = (nobs/2)*ln(sig2);
+//    a = -rho*dband;
+//    a = a + eye(nobs);
+//    jacob = ln(det(a));
+    
+//    clik = nlsig2 - jacob;
+//    retp(clik);
+
+// endp;
