@@ -1,3 +1,5 @@
+# Box Cox model for work distance
+
 import numpy as np
 import pandas as pd
 import pysal as ps
@@ -13,6 +15,7 @@ BC = 1
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_GO", "t_local", "t_PRESTO"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_long", "t_local"]
 x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local"]
+y_name = "totdist"
 
 beta_array = np.zeros((NSIMS, len(x_names) + 3))
 std_err_array = np.zeros((NSIMS, len(x_names) + 3))
@@ -27,11 +30,6 @@ for i in range(1, NSIMS+1, 1):
                   "taz_area_m", "taz_area_h", "taz_mun", "taz_pd", "taz_avg_price", "taz_med_price", "taz_new_list", "taz_childcare",
                   "taz_school", "taz_shop_trips", "taz_pop", "taz_area_com", "taz_area_gov", "taz_area_res", "taz_area_ind", "taz_area_park"]
     ds_name = "sample{0}.csv".format(i)
-    y_name = "workdist"
-    y = db[y_name].values
-    y = y[:, np.newaxis]
-    # Convert distances in meters to km
-    y = y / 10 ** 3
     # Update average zone price variable to scale and remove nan (replace with average for region)
     db['taz_avg_price'] = db['taz_avg_price'] / 10**4
     db['taz_avg_price'].fillna(73.98787585, inplace=True)
@@ -39,10 +37,23 @@ for i in range(1, NSIMS+1, 1):
     # PRESTO and GO are similar, so combine
     db['t_long'] = ((db['transpass'] == 1) | (db['transpass'] == 2) | (db['transpass'] == 6)).astype(int)
     db['t_local'] = ((db['transpass'] == 3) | (db['transpass'] == 5)).astype(int)
+    db[y_name] = db["daycaredist"] + db["facdist"] + db["homedist"] + db["shopdist"] + db["othdist"] + db["schooldist"] \
+                 + db["workdist"]
 
-    x = db[x_names].values
     ww = np.loadtxt('D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/weight{0}.csv'.format(i), delimiter=',')
     ww = ((ww < 1000.0) & (ww > 0.0))*1
+    # Remove zero elements
+    lst_NW = db[db[y_name] == 0].index.tolist()
+    ww = np.delete(ww, lst_NW, axis=0)
+    ww = np.delete(ww, lst_NW, axis=1)
+    db = db[db[y_name] > 0]
+
+    y = db[y_name].values
+    y = y[:, np.newaxis]
+    # Convert distances in meters to km
+    y = y / 10 ** 3
+    x = db[x_names].values
+
     w = ps.weights.util.full2W(ww)
     if BC == 1:
         # Perform analysis on distance in meters because gives more values > 1.0
