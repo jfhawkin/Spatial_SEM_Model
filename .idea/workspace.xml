@@ -3,7 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="9610b007-4be2-4178-ba12-64ce051094c4" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sim_boxcox.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/sim_boxcox_shop.py" beforeDir="false" afterPath="$PROJECT_DIR$/sim_boxcox_shop.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sim_boxcox_total.py" beforeDir="false" afterPath="$PROJECT_DIR$/sim_boxcox_total.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py" beforeDir="false" afterPath="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py" beforeDir="false" afterPath="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py" beforeDir="false" afterPath="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py" afterDir="false" />
     </list>
@@ -17,36 +19,36 @@
     <session id="256299180">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="6" />
+          <entry key="project.closed" value="7" />
           <entry key="project.open.time.0" value="1" />
           <entry key="project.open.time.10" value="1" />
           <entry key="project.open.time.7" value="1" />
-          <entry key="project.open.time.8" value="1" />
-          <entry key="project.open.time.9" value="2" />
-          <entry key="project.opened" value="6" />
+          <entry key="project.open.time.8" value="2" />
+          <entry key="project.open.time.9" value="3" />
+          <entry key="project.opened" value="8" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="Python Console" value="2827" />
-          <entry key="py" value="13997" />
-          <entry key="txt" value="50" />
+          <entry key="Python Console" value="3844" />
+          <entry key="py" value="18463" />
+          <entry key="txt" value="145" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="50" />
-          <entry key="Python" value="16824" />
+          <entry key="PLAIN_TEXT" value="145" />
+          <entry key="Python" value="22307" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="95" />
+          <entry key="py" value="111" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="95" />
+          <entry key="Python" value="111" />
         </counts>
       </usages-collector>
     </session>
@@ -56,22 +58,29 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-4624">
-              <caret line="247" column="43" selection-start-line="247" selection-start-column="43" selection-end-line="247" selection-end-column="43" />
+            <state relative-caret-position="3536">
+              <caret line="218" column="38" selection-start-line="218" selection-start-column="31" selection-end-line="218" selection-end-column="38" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/sim_boxcox_work.py">
-          <provider selected="true" editor-type-id="text-editor" />
+        <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/utils.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="11560">
+              <caret line="687" column="17" selection-start-line="687" selection-start-column="17" selection-end-line="687" selection-end-column="17" />
+              <folding>
+                <element signature="e#285#303#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/sim_boxcox_total.py">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/sim_boxcox_work.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="408">
-              <caret line="48" column="27" selection-start-line="48" selection-start-column="27" selection-end-line="48" selection-end-column="27" />
+            <state relative-caret-position="193">
+              <caret line="46" selection-start-line="46" selection-end-line="51" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -79,17 +88,26 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sim_boxcox_shop.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="238">
-              <caret line="17" column="18" selection-start-line="17" selection-start-column="18" selection-end-line="17" selection-end-column="18" />
+            <state relative-caret-position="221">
+              <caret line="70" column="125" selection-start-line="70" selection-start-column="125" selection-end-line="70" selection-end-column="125" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/sim_boxcox_total.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="986">
+              <caret line="64" column="125" selection-start-line="64" selection-start-column="125" selection-end-line="64" selection-end-column="125" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1689">
-              <caret line="243" column="102" selection-start-line="243" selection-start-column="102" selection-end-line="243" selection-end-column="102" />
+            <state relative-caret-position="107">
+              <caret line="375" column="58" selection-start-line="375" selection-start-column="58" selection-end-line="375" selection-end-column="58" />
               <folding>
                 <element signature="e#103#121#0" expanded="true" />
               </folding>
@@ -98,10 +116,19 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/user_output.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1275">
+              <caret line="81" selection-start-line="81" selection-end-line="81" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="210">
-              <caret line="232" column="100" lean-forward="true" selection-start-line="232" selection-start-column="100" selection-end-line="232" selection-end-column="100" />
+            <state relative-caret-position="18955">
+              <caret line="1124" column="29" selection-start-line="1124" selection-start-column="19" selection-end-line="1124" selection-end-column="29" />
               <folding>
                 <element signature="e#194#215#0" expanded="true" />
               </folding>
@@ -120,28 +147,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>ylam</find>
-      <find>tr2</find>
-      <find>self.predy</find>
-      <find>xb</find>
-      <find>self.y</find>
-      <find>lag_c_loglik</find>
-      <find>self.rho</find>
-      <find>self.lam</find>
-      <find>ww</find>
-      <find>w</find>
-      <find>self.w</find>
-      <find>sparse</find>
-      <find>if</find>
-      <find>dcdl</find>
-      <find>summary_r2</find>
-      <find>ybc</find>
-      <find>get_beta_err</find>
-      <find>4</find>
-      <find>np.log</find>
-      <find>np.exp</find>
-      <find>self.pred</find>
-      <find>inverse_prod</find>
       <find>self.predy_e</find>
       <find>predy_e</find>
       <find>LM</find>
@@ -150,13 +155,37 @@
       <find>&gt;0</find>
       <find>&gt; 0</find>
       <find>chisq</find>
+      <find>lag_c_loglik</find>
+      <find>5</find>
+      <find>pred</find>
+      <find>rho</find>
+      <find>xfull</find>
+      <find>eigs</find>
+      <find>eig</find>
+      <find>append</find>
+      <find>hstack</find>
+      <find>ac</find>
+      <find>eigenv</find>
+      <find>cy</find>
+      <find>name_x</find>
+      <find>beta_diag_lag</find>
+      <find>summary_coefs_allx</find>
+      <find>_get_var_indices</find>
+      <find>inverse</find>
+      <find>name_z</find>
+      <find>eigvals</find>
+      <find>reg.name_z</find>
+      <find>-1 *</find>
+      <find>b[</find>
     </findStrings>
     <replaceStrings>
       <replace>5</replace>
+      <replace>9</replace>
+      <replace>-</replace>
     </replaceStrings>
     <dirStrings>
-      <dir>C:\Users\jason\Documents\PhD\Thesis\estimation\Spatial_SEM_Model\venv\Lib\site-packages\pysal\spreg</dir>
       <dir>C:\Users\jason\Documents\PhD\Thesis\estimation\Spatial_SEM_Model\venv\Lib\site-packages\pysal</dir>
+      <dir>C:\Users\jason\Documents\PhD\Thesis\estimation\Spatial_SEM_Model\venv\Lib\site-packages\pysal\spreg</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
@@ -169,11 +198,13 @@
         <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/user_output.py" />
         <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/weights/spatial_lag.py" />
         <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/__init__.py" />
-        <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py" />
         <option value="$PROJECT_DIR$/sim_boxcox.py" />
-        <option value="$PROJECT_DIR$/sim_boxcox_total.py" />
-        <option value="$PROJECT_DIR$/sim_boxcox_shop.py" />
+        <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py" />
+        <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py" />
         <option value="$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py" />
+        <option value="$PROJECT_DIR$/sim_boxcox_shop.py" />
+        <option value="$PROJECT_DIR$/sim_boxcox_total.py" />
+        <option value="$PROJECT_DIR$/sim_boxcox_work.py" />
       </list>
     </option>
   </component>
@@ -187,6 +218,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -306,7 +338,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -419,19 +450,27 @@
       <option name="project" value="LOCAL" />
       <updated>1544127483338</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Updated LM test to use artificial regression. Added better weight matrix function.">
+      <created>1544626246075</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1544626246075</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.14225501" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.08061117" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.65401304" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.23427331" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.52060735" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.5366922" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -449,15 +488,41 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial addition of LM tests. Untested." />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial addition of LM tests. Untested." />
+    <MESSAGE value="Updated LM test to use artificial regression. Added better weight matrix function." />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated LM test to use artificial regression. Added better weight matrix function." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py</url>
-          <line>247</line>
-          <option name="timeStamp" value="56" />
+          <url>file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py</url>
+          <line>220</line>
+          <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py</url>
+          <line>765</line>
+          <option name="timeStamp" value="79" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py</url>
+          <line>256</line>
+          <option name="timeStamp" value="80" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py</url>
+          <line>1060</line>
+          <option name="timeStamp" value="81" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py</url>
+          <line>358</line>
+          <option name="timeStamp" value="82" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/sim_boxcox_work.py</url>
+          <line>56</line>
+          <option name="timeStamp" value="83" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-dialog>
@@ -562,6 +627,35 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="328">
+          <caret line="1663" selection-start-line="1663" selection-end-line="1663" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sim_boxcox.py" />
+    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/scipy/optimize/optimize.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="141">
+          <caret line="292" selection-start-line="292" selection-end-line="292" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/sputils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="241">
+          <caret line="27" selection-start-line="27" selection-end-line="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/scipy/optimize/lbfgsb.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="274">
+          <caret line="266" selection-start-line="266" selection-end-line="266" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/scipy/optimize/_minimize.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="124">
@@ -569,24 +663,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/scipy/optimize/optimize.py">
+    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="141">
-          <caret line="664" selection-start-line="664" selection-end-line="664" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/scipy/optimize/lbfgsb.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="277">
-          <caret line="334" selection-start-line="334" selection-end-line="334" />
+        <state relative-caret-position="3536">
+          <caret line="218" column="38" selection-start-line="218" selection-start-column="31" selection-end-line="218" selection-end-column="38" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="113" selection-start-line="113" selection-end-line="113" />
+        <state relative-caret-position="11560">
+          <caret line="687" column="17" selection-start-line="687" selection-start-column="17" selection-end-line="687" selection-end-column="17" />
           <folding>
             <element signature="e#285#303#0" expanded="true" />
           </folding>
@@ -595,76 +682,49 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/user_output.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="109">
-          <caret line="458" selection-start-line="458" selection-end-line="458" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/sputils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="241">
-          <caret line="26" selection-start-line="26" selection-end-line="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="328">
-          <caret line="1663" selection-start-line="1663" selection-end-line="1663" />
+        <state relative-caret-position="1275">
+          <caret line="81" selection-start-line="81" selection-end-line="81" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/summary_output.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="232" column="100" lean-forward="true" selection-start-line="232" selection-start-column="100" selection-end-line="232" selection-end-column="100" />
+        <state relative-caret-position="18955">
+          <caret line="1124" column="29" selection-start-line="1124" selection-start-column="19" selection-end-line="1124" selection-end-column="29" />
           <folding>
             <element signature="e#194#215#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/sim_boxcox.py">
+    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" lean-forward="true" selection-start-line="1" selection-end-line="1" />
+        <state relative-caret-position="107">
+          <caret line="375" column="58" selection-start-line="375" selection-start-column="58" selection-end-line="375" selection-end-column="58" />
           <folding>
-            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#103#121#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-4624">
-          <caret line="247" column="43" selection-start-line="247" selection-start-column="43" selection-end-line="247" selection-end-column="43" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sim_boxcox_work.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sim_boxcox_total.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
-          <caret line="48" column="27" selection-start-line="48" selection-start-column="27" selection-end-line="48" selection-end-column="27" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/sim_boxcox_shop.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="238">
-          <caret line="17" column="18" selection-start-line="17" selection-start-column="18" selection-end-line="17" selection-end-column="18" />
+        <state relative-caret-position="221">
+          <caret line="70" column="125" selection-start-line="70" selection-start-column="125" selection-end-line="70" selection-end-column="125" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/venv/Lib/site-packages/pysal/spreg/ml_lag_bc.py">
+    <entry file="file://$PROJECT_DIR$/sim_boxcox_total.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1689">
-          <caret line="243" column="102" selection-start-line="243" selection-start-column="102" selection-end-line="243" selection-end-column="102" />
-          <folding>
-            <element signature="e#103#121#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="986">
+          <caret line="64" column="125" selection-start-line="64" selection-start-column="125" selection-end-line="64" selection-end-column="125" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sim_boxcox_work.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="193">
+          <caret line="46" selection-start-line="46" selection-end-line="51" selection-end-column="16" />
         </state>
       </provider>
     </entry>

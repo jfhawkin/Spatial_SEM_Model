@@ -14,7 +14,10 @@ BC = 1
 # x_names = ["lic", "hhsize", "hhinc", "sex", , "autotrip", "activetrip", "transpass"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_GO", "t_local", "t_PRESTO"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_long", "t_local"]
-x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local"]
+x_names = ["taz_avg_price"]
+z_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local"]
+# x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local", "taz_area_com"]
+# x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local", "taz_area_park"]
 y_name = "totdist"
 
 beta_array = np.zeros((NSIMS, len(x_names) + 3))
@@ -53,13 +56,13 @@ for i in range(1, NSIMS+1, 1):
     # Convert distances in meters to km
     y = y / 10 ** 3
     x = db[x_names].values
+    z = db[z_names].values
 
     w = ps.weights.util.full2W(ww)
     if BC == 1:
-        # Perform analysis on distance in meters because gives more values > 1.0
-        mllag = ps.spreg.ML_Lag_BC(y, x, w, name_y=y_name, name_x=x_names, name_ds=ds_name, LM=True)
+        mllag = ps.spreg.ML_Lag_BC(y, x, z, w, name_y=y_name, name_x=x_names, name_z1=z_names, name_ds=ds_name, LM=True)
     else:
-        mllag = ps.spreg.ML_Lag(y, x, w, name_y=y_name, name_x=x_names, name_ds=ds_name)
+        mllag = ps.spreg.ML_Lag(y, np.concatenate((x, z), axis=1), w, name_y=y_name, name_x=x_names+z_names, name_ds=ds_name)
 
     if NSIMS == 100:
         beta_array[i-1, :] = np.squeeze(mllag.betas)
