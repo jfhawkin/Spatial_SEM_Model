@@ -8,13 +8,16 @@ import matplotlib.pyplot as plt
 NSIMS = 1
 NOBS = 2000
 # Indicates whether to estimate Box-Cox transformation
-BC = 1
+BC = 0
 
 # x_names = ["lic", "hhsize", "hhinc", "sex", "taz_avg_price", "autotrip", "activetrip", "t_long", "t_local"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", , "autotrip", "activetrip", "transpass"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_GO", "t_local", "t_PRESTO"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_long", "t_local"]
-x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local"]
+x_names = ["taz_avg_price"]
+z_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local"]
+# x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local", "taz_area_com"]
+# x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local", "taz_area_park"]
 y_name = "workdist"
 
 beta_array = np.zeros((NSIMS, len(x_names) + 3))
@@ -40,6 +43,16 @@ for i in range(1, NSIMS+1, 1):
 
     ww = np.loadtxt('D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/weight{0}.csv'.format(i), delimiter=',')
     ww = ((ww < 1000.0) & (ww > 0.0))*1
+    # Update weights for same income class
+    i = db.hhinc.values
+    im = np.repeat(i, len(i)).reshape(-1, len(i))
+    jm = im.T
+    bm = (im == jm)*1
+    np.fill_diagonal(bm, 0)
+    ww = ww * bm
+    # ww = ww / 10**3
+    # ww = 1 / ww
+    # ww[ww==np.inf] = 0
     # Remove zero elements
     lst_NW = db[db[y_name] == 0].index.tolist()
     ww = np.delete(ww, lst_NW, axis=0)
@@ -51,13 +64,13 @@ for i in range(1, NSIMS+1, 1):
     # Convert distances in meters to km
     y = y / 10 ** 3
     x = db[x_names].values
+    z = db[z_names].values
 
     w = ps.weights.util.full2W(ww)
     if BC == 1:
-        # Perform analysis on distance in meters because gives more values > 1.0
-        mllag = ps.spreg.ML_Lag_BC(y, x, w, name_y=y_name, name_x=x_names, name_ds=ds_name, LM=True)
+        mllag = ps.spreg.ML_Lag_BC(y, x, z, w, name_y=y_name, name_x=x_names, name_z1=z_names, name_ds=ds_name, LM=True)
     else:
-        mllag = ps.spreg.ML_Lag(y, x, w, name_y=y_name, name_x=x_names, name_ds=ds_name)
+        mllag = ps.spreg.ML_Lag(y, np.concatenate((x, z), axis=1), w, name_y=y_name, name_x=x_names+z_names, name_ds=ds_name)
 
     if NSIMS == 100:
         beta_array[i-1, :] = np.squeeze(mllag.betas)
