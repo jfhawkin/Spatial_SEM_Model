@@ -8,69 +8,120 @@ import matplotlib.pyplot as plt
 NSIMS = 1
 NOBS = 2000
 # Indicates whether to estimate Box-Cox transformation
-BC = 1
+BC = True
+# Indicates whether to calculate LM statistics
+LM = False
 
 # x_names = ["lic", "hhsize", "hhinc", "sex", "taz_avg_price", "autotrip", "activetrip", "t_long", "t_local"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", , "autotrip", "activetrip", "transpass"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_GO", "t_local", "t_PRESTO"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "autotrip", "activetrip", "t_long", "t_local"]
-x_names = ["taz_avg_price"]
-z_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local"]
+x_names = ["taz_avg_price", "taz_pop_dens"]
+# z_names = ["lic", "hhsize", "sex", "activetrip", "t_long", "t_local"]
+# z_names = ["lic", "hhsize", "sex", "activetrip", "t_long", "t_local", "age_26_64", "age_65"]
+# z_names = ["lic", "hhsize", "sex", "activetrip", "t_long", "t_local", "veh_adult"]
+# z_names = ["lic", "hhsize", "sex", "activetrip", "t_long", "t_local", "veh_adult", "occ_5", "studstat_2", "empstat_2", "empstat_5"]
+z_names = ["sex", "activetrip", "t_long", "t_local", "veh_adult", "occ_5", "taz_region_24"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local", "taz_area_com"]
 # x_names = ["lic", "hhsize", "hhinc", "sex", "activetrip", "t_long", "t_local", "taz_area_park"]
 y_name = "totdist"
 
-beta_array = np.zeros((NSIMS, len(x_names) + 3))
-std_err_array = np.zeros((NSIMS, len(x_names) + 3))
+beta_array = np.zeros((NSIMS, len(x_names) + len(z_names) + 3))
+std_err_array = np.zeros((NSIMS, len(x_names) + len(z_names) + 3))
 
 for i in range(1, NSIMS+1, 1):
-    db = pd.read_csv('D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/sample{0}.csv'.format(i), header=None)
+    df = pd.read_csv('D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/sample{0}.csv'.format(i), header=None)
     # Add the column names to the dataframe
-    db.columns = ["uno", "sero", "householdid", "householdzone", "daycaredist", "facdist", "homedist", "shopdist", "othdist",
+    df.columns = ["uno", "sero", "householdid", "householdzone", "daycaredist", "facdist", "homedist", "shopdist", "othdist",
                   "schooldist", "workdist", "transtrip", "activetrip", "autotrip", "gotrip", "taxitrip", "ubertrip", "dwelltype",
                   "hhveh", "hhinc", "hhsize", "hhworkers", "hhstudents", "hhadults", "hhchildren", "hhtrips", "age", "sex",
                   "empstat", "occ", "studstat", "lic", "transpass", "unusualplaceofwork", "worktrips", "schooltrips", "taz_region",
                   "taz_area_m", "taz_area_h", "taz_mun", "taz_pd", "taz_avg_price", "taz_med_price", "taz_new_list", "taz_childcare",
                   "taz_school", "taz_shop_trips", "taz_pop", "taz_area_com", "taz_area_gov", "taz_area_res", "taz_area_ind", "taz_area_park"]
     ds_name = "sample{0}.csv".format(i)
+
+    # Update taz area columns
+    df = df.drop(['taz_area_m', 'taz_area_h'], axis=1)
+    df = df.reindex()
+    df1 = pd.read_csv('taz_area.csv')
+    df = df.merge(df1, left_on='householdzone', right_on='householdzone', how='left')
+
     # Update average zone price variable to scale and remove nan (replace with average for region)
-    db['taz_avg_price'] = db['taz_avg_price'] / 10**4
-    db['taz_avg_price'].fillna(73.98787585, inplace=True)
+    df['taz_avg_price'] = df['taz_avg_price'] / 10**4
+    df['taz_avg_price'].fillna(73.98787585, inplace=True)
+
+    # Population density in persons per hectare
+    df['taz_pop_dens'] = df['taz_pop'] / df['taz_area_h']
+    # For the few records with no pop in taz table, assume average pop density
+    row_mask = df.taz_pop_dens == 0
+    df.loc[row_mask, 'taz_pop_dens'] = 60
+    df['child'] = (df['hhchildren'] > 0) * 1
 
     # PRESTO and GO are similar, so combine
-    db['t_long'] = ((db['transpass'] == 1) | (db['transpass'] == 2) | (db['transpass'] == 6)).astype(int)
-    db['t_local'] = ((db['transpass'] == 3) | (db['transpass'] == 5)).astype(int)
-    db[y_name] = db["daycaredist"] + db["facdist"] + db["homedist"] + db["shopdist"] + db["othdist"] + db["schooldist"] \
-                 + db["workdist"]
+    df['t_long'] = ((df['transpass'] == 1) | (df['transpass'] == 2) | (df['transpass'] == 6)).astype(int)
+    df['t_local'] = ((df['transpass'] == 3) | (df['transpass'] == 5)).astype(int)
+    # Age categories
+    #df['age_25'] = (df['age'] <=25).astype(int)
+    df['age_26_64'] = ((df['age'] > 25) & (df['age'] < 65)).astype(int)
+    df['age_65'] = (df['age'] >= 65).astype(int)
+    # Get dummy variables
+    # iv = df.dwelltype.values  # Need to set before getting dummies because dummy function drops the original column
+    df = pd.get_dummies(df, columns=['dwelltype', 'occ', 'studstat', 'empstat', 'taz_region', 'taz_pd'], drop_first=True)
+    df['taz_region_24'] = (df['taz_region_2']==1 | (df['taz_region_4']==1)).astype(int)
+    # Vehicles per person variables
+    df['veh_adult'] = df['hhveh'] / df['hhadults']
+    df['veh_worker'] = df['hhveh'] / df['hhworkers']
+
+    df[y_name] = df["daycaredist"] + df["facdist"] + df["homedist"] + df["shopdist"] + df["othdist"] + df["schooldist"] \
+                 + df["workdist"]
 
     ww = np.loadtxt('D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/weight{0}.csv'.format(i), delimiter=',')
     ww = ((ww < 1000.0) & (ww > 0.0))*1
+    # Convert weights to inverse km
+    # ww[ww==0] = 99999
+    # ww = (ww / 10**3)**-1
+    # np.fill_diagonal(ww, 0)
+    # Update weights for same income class check
+    iv = df.hhinc.values
+    # # Update weights for same hhchildren status
+    # iv = df.child.values
+    im = np.repeat(iv, len(iv)).reshape(-1, len(iv))
+    jm = im.T
+    bm = (im == jm)*1
+    np.fill_diagonal(bm, 0)
+    ww = ww * bm
+
     # Remove zero elements
-    lst_NW = db[db[y_name] == 0].index.tolist()
+    lst_NW = df[df[y_name] == 0].index.tolist()
     ww = np.delete(ww, lst_NW, axis=0)
     ww = np.delete(ww, lst_NW, axis=1)
-    db = db[db[y_name] > 0]
+    df = df[df[y_name] > 0]
 
-    y = db[y_name].values
+    y = df[y_name].values
     y = y[:, np.newaxis]
     # Convert distances in meters to km
     y = y / 10 ** 3
-    x = db[x_names].values
-    z = db[z_names].values
+    x = df[x_names].values
+    z = df[z_names].values
 
     w = ps.weights.util.full2W(ww)
-    if BC == 1:
-        mllag = ps.spreg.ML_Lag_BC(y, x, z, w, name_y=y_name, name_x=x_names, name_z1=z_names, name_ds=ds_name, LM=True)
+    if BC:
+        if LM:
+            mllag = ps.spreg.ML_Lag_BC(y, x, z, w, name_y=y_name, name_x=x_names, name_z1=z_names, name_ds=ds_name, LM=True)
+        else:
+            mllag = ps.spreg.ML_Lag_BC(y, x, z, w, name_y=y_name, name_x=x_names, name_z1=z_names, name_ds=ds_name,
+                                       LM=False)
     else:
         mllag = ps.spreg.ML_Lag(y, np.concatenate((x, z), axis=1), w, name_y=y_name, name_x=x_names+z_names, name_ds=ds_name)
 
-    if NSIMS == 100:
+    if NSIMS > 1:
         beta_array[i-1, :] = np.squeeze(mllag.betas)
         std_err_array[i-1, :] = np.squeeze(mllag.std_err)
+        print("Finished regression run {0}".format(i))
     else:
         print(mllag.summary)
 
-if NSIMS == 100:
+if NSIMS > 1:
     # Print the lists of beta parameters and standard errors for all simulations
     print(np.mean(beta_array, axis=0))
     print(np.mean(std_err_array, axis=0))
@@ -91,8 +142,9 @@ if NSIMS == 100:
     ax.set_ylabel('Value')
     ax.set_title('Bootstrapped Mean and Standard Errors for 100 Samples')
     ax.set_xticks(ind)
-    ax.set_xticklabels(("CONSTANT", "HHVEH", "HHSIZE", "HHINC", "SEX", "AVG PRICE", "AUTOTRIPS", "ACTIVETRIPS", "RHO", "LAMBDA"))
+    ax.set_xticklabels(("CONSTANT", "AVG PRICE", "POP DENS", "GENDER", "ACTIVE TRIPS", "TRANSIT LONG",
+                        "TRANSIT LOCAL", "VEH RATE", "NO EMP", "REGION 24", "RHO", "LAMBDA"))
     ax.legend()
     plt.xticks(rotation=45)
 
-    plt.savefig('boxcox.png')
+    plt.savefig('boxcox_total.png')

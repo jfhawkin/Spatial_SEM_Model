@@ -7,18 +7,18 @@ CMLset;
 ******************************************************************************/
 /* number of observations */
 nobs = 2000;
-nsims = 100;
+nsims = 57;
 //__row = 1000;
 
 /* Specify the database connnection */
-//id = dbAddDatabase("PSQL");
-//dbSetHostName(id, "localhost");
-//dbSetPort(id, 5432);
-//dbSetDatabaseName(id, "TTS_2016");
-//dbSetUserName(id, "postgres");
-//dbSetPassword(id, "postgres");
-//dbOpen(id);
-//gdaCreate("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", 1);
+id = dbAddDatabase("PSQL");
+dbSetHostName(id, "localhost");
+dbSetPort(id, 5432);
+dbSetDatabaseName(id, "TTS_2016");
+dbSetUserName(id, "postgres");
+dbSetPassword(id, "postgres");
+dbOpen(id);
+gdaCreate("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", 1);
 
 /* Initialize variables that do not vary within simulation runs */
 bvec = {};
@@ -26,10 +26,10 @@ sigvec = {};
 
 
 /* Loop through the estimation "nsims" number of times */
-for i(1, nsims, 1);
+for i(57, 57, 1);
 //    /* Query the database for "nobs" observations */
-//    ph1 = "$1";
-//    query = "SELECT sub.* FROM (SELECT * FROM public.boxcoxdata_taz ORDER BY random() LIMIT "$+ph1$+") sub ORDER BY householdid;";
+    ph1 = "$1";
+    query = "SELECT sub.* FROM (SELECT * FROM public.boxcoxdata_taz ORDER BY random() LIMIT "$+ph1$+") sub ORDER BY householdid;";
 //    /* 1: uno, 2: sero, 3: householdid, 4: householdzone, 5: daycaredist, 6: facdist, 7: homedist */
 //    /* 8: shopdist, 9: othdist, 10: schooldist, 11: workdist, 12: transtrip, 13: activetrip, 14: autotrip */
 //    /* 15: gotrip, 16: taxitrip, 17: ubertrip, 18: dwelltype, 19: hhveh, 20: hhinc, 21: hhsize */
@@ -39,29 +39,29 @@ for i(1, nsims, 1);
 //    /* 43: taz_med_price, 44: taz_new_list, 45: taz_childcare, 46: taz_school, 47: taz_shop_trips, 48: taz_pop, 49: taz_area_com */      
 //    /* 50: taz_area_gov, 51: taz_area_res, 52: taz_area_ind, 53: taz_area_park */   
 //    /*  Immediately execute query with GAUSS vector converted to string array as third argument */
-//    qid = dbExecQuery(id, query[1], ntos(nobs));
-//    dataset = dbQueryFetchAllM(qid);
+    qid = dbExecQuery(id, query[1], ntos(nobs));
+    dataset = dbQueryFetchAllM(qid);
 
 ///******************************************************************************
 //                 Spatial Weight Matrix
 //******************************************************************************/
-//    hh = dataset[.,3];
-//    ph2  = strjoin(("$"$+ntos(seqa(1,1,nobs)))', ", ");
+    hh = dataset[.,3];
+    ph2  = strjoin(("$"$+ntos(seqa(1,1,nobs)))', ", ");
 //    /*  A somewhat convoluted query, but essentially pulls out the distance ijv values for the sample HH observations. */
 //    /*  Takes these observations and remaps the ij ids so they are sequential from 1-nobs. */
-//    query = "SELECT super1.dist, super2.ii AS i, super3.jj AS j FROM (SELECT sub1.dist, sub1.i, sub1.j FROM (SELECT dist, i, j
-//	FROM public.hh_dist_300k WHERE i IN ("$+ph2$+") AND j IN ("$+ph2$+") ORDER BY RANDOM()) sub1 ORDER BY i, j)super1,
-//    (SELECT sub2.i, ROW_NUMBER() OVER () AS ii FROM (SELECT DISTINCT i FROM public.hh_dist_300k WHERE i IN ("$+ph2$+")) sub2) super2,
-//    (SELECT sub3.j, ROW_NUMBER() OVER () AS jj FROM (SELECT DISTINCT j FROM public.hh_dist_300k WHERE j IN ("$+ph2$+")) sub3) super3
-//    WHERE super2.i=super1.i AND super3.j=super1.j ORDER BY i,j;";
+    query = "SELECT super1.dist, super2.ii AS i, super3.jj AS j FROM (SELECT sub1.dist, sub1.i, sub1.j FROM (SELECT dist, i, j
+	FROM public.hh_dist_300k WHERE i IN ("$+ph2$+") AND j IN ("$+ph2$+") ORDER BY RANDOM()) sub1 ORDER BY i, j)super1,
+    (SELECT sub2.i, ROW_NUMBER() OVER () AS ii FROM (SELECT DISTINCT i FROM public.hh_dist_300k WHERE i IN ("$+ph2$+")) sub2) super2,
+    (SELECT sub3.j, ROW_NUMBER() OVER () AS jj FROM (SELECT DISTINCT j FROM public.hh_dist_300k WHERE j IN ("$+ph2$+")) sub3) super3
+    WHERE super2.i=super1.i AND super3.j=super1.j ORDER BY i,j;";
 
 //    /*  Immediately execute query with GAUSS vector converted to string array as third argument */
-//    qid = dbExecQuery(id, query[1], ntos(hh,8));
-//    ret = dbQueryFetchAllM(qid);
-//    /* Convert input into a sparse matrix format to make correspondence between ijv into full matrix with zero in non-adjacent cells*/
-//    sparse matrix spweights;
-//    spweights = packedToSp(nobs,nobs,ret);
-//    weights = spToDense(spweights);
+    qid = dbExecQuery(id, query[1], ntos(hh,8));
+    ret = dbQueryFetchAllM(qid);
+    /* Convert input into a sparse matrix format to make correspondence between ijv into full matrix with zero in non-adjacent cells*/
+    sparse matrix spweights;
+    spweights = packedToSp(nobs,nobs,ret);
+    weights = spToDense(spweights);
         
 //    /* Proximate if distance < 1 km */
 //    dband=(weights.<1000).*(weights.>0);
@@ -70,21 +70,23 @@ for i(1, nsims, 1);
 //    eventvar = (dataset[.,29].==1) + (dataset[.,29].==5);
 //    dband    = dband.*eventvar;
     
-//    print "Writing data for simulation run..." i;
+    print "Writing data for simulation run..." i;
+    csvWriteM(dataset, convertsatostr(strjoin(("sample"$~ntos(i)$~".csv"),"")));
+    csvWriteM(weights, convertsatostr(strjoin(("weight"$~ntos(i)$~".csv"),"")));
 //    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", dataset, convertsatostr(strjoin(("Sample"$~ntos(i)),"_")));
 //    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", weights, convertsatostr(strjoin(("Weight"$~ntos(i)),"_")));
-//    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", dband, convertsatostr(strjoin(("Dband"$~ntos(i)),"_")));
-//    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", eventvar, convertsatostr(strjoin(("Eventvar"$~ntos(i)),"_")));
+////    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", dband, convertsatostr(strjoin(("Dband"$~ntos(i)),"_")));
+////    gdaWrite("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", eventvar, convertsatostr(strjoin(("Eventvar"$~ntos(i)),"_")));
 
-///* I am thinking it will work to write the data to an archive for dband and dataset, then pull rows out in 2000 record chunks on each iteration. Would allow us to 
-//    use the same data for estimation across runs and remove the database query process, so much faster. */
-    dataset  = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Sample"$~ntos(i)),"_")));
-    weights  = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Weight"$~ntos(i)),"_")));
-    dband    = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Dband"$~ntos(i)),"_")));
-    eventvar = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Eventvar"$~ntos(i)),"_")));
+/////* I am thinking it will work to write the data to an archive for dband and dataset, then pull rows out in 2000 record chunks on each iteration. Would allow us to 
+////    use the same data for estimation across runs and remove the database query process, so much faster. */
+//    dataset  = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Sample"$~ntos(i)),"_")));
+//    weights  = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Weight"$~ntos(i)),"_")));
+////    dband    = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Dband"$~ntos(i)),"_")));
+////    eventvar = gdaRead("D:/PhD/Thesis/estimation/Spatial_SEM_Model/spatial_sem.gda", convertsatostr(strjoin(("Eventvar"$~ntos(i)),"_")));
     
-    csvWriteM(dataset, convertsatostr(strjoin(("D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/sample"$~ntos(i)$~".csv"),"")));
-    csvWriteM(weights, convertsatostr(strjoin(("D:/PhD/Thesis/estimation/Spatial_SEM_Model/data/weight"$~ntos(i)$~".csv"),"")));
+//    csvWriteM(dataset, convertsatostr(strjoin(("sample"$~ntos(i)$~".csv"),"")));
+//    csvWriteM(weights, convertsatostr(strjoin(("weight"$~ntos(i)$~".csv"),"")));
     
 /////* *******************************************************************************************
 ////                                       MAIN PROGRAM AREA
